@@ -4,7 +4,7 @@ Social Media Post Generator is an AI-powered tool that helps you create engaging
 
 Built with Next.js and cutting-edge AI technology, this open-source template enables developers to create an AI-powered social media content generator. As the demand for a consistent and engaging social media presence grows, this tool provides everything you need to maintain an active and professional social media presence.
 
-## preview
+## Preview
 https://social-media-content-creation.vercel.app/
 ## Features
 
