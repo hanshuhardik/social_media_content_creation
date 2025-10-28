@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
-console.log("Gemini Key exists:", process.env.GEMINI_API_KEY ? "✅ Yes" : "❌ No");
+// console.log("Gemini Key exists:", process.env.GEMINI_API_KEY ? "✅ Yes" : "❌ No");
 
 export const config = {
   api: {
