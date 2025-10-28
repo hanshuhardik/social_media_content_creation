@@ -1,104 +1,12 @@
-
-//testing
-// import { GoogleGenerativeAI } from "@google/generative-ai";
-
-// const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
-
-// export const config = {
-//   api: {
-//     bodyParser: {
-//       sizeLimit: '15mb', // allow image uploads
-//     },
-//   },
-// };
-
-// export async function POST(req: Request) {
-//   try {
-//     const body = await req.json();
-//     const {
-//       platform,
-//       tone,
-//       wordLimit,
-//       includeHashtags,
-//       includeEmoji,
-//       description,
-//       imageBase64,
-//     } = body;
-
-//     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-//     let prompt = "";
-
-//     // --- Platform-Specific Prompts ---
-//     if (platform === "blog") {
-//       prompt = `
-//       Write a detailed blog post on: "${description || 'a topic inferred from the image'}".
-//       Requirements:
-//       - Tone: ${tone}
-//       - Word count: around ${wordLimit} words (between 1000–2500)
-//       - Include relevant headings and subheadings
-//       - Make it well-structured and SEO-friendly
-//       - ${includeHashtags ? 'Add 3–5 relevant hashtags at the end' : 'No hashtags'}
-//       - ${includeEmoji ? 'Use emojis sparingly where relevant' : 'Avoid emojis'}
-//       Only return the blog content.
-//       `;
-//     } else if (["instagram", "facebook","linkedin","twitter"].includes(platform)) {
-//       prompt = `
-//       You are an expert social media content creator.
-//       Create a caption for ${platform}, analyzing the provided ${
-//         imageBase64 ? "image" : "description"
-//       }${imageBase64 && description ? " and description together" : ""}.
-//       Guidelines:
-//       - Tone: ${tone}
-//       - Word limit: ${wordLimit}
-//       - ${includeHashtags ? "Include relevant hashtags" : "Do not include hashtags"}
-//       - ${includeEmoji ? "Use emojis naturally" : "Avoid emojis"}
-//       Focus on creating an engaging and context-aware caption.
-//       Return only the caption text.
-//       `;
-//     } else {
-//       prompt = `
-//       Write a ${platform} post about: ${description}.
-//       - Tone: ${tone}
-//       - Word limit: ${wordLimit}
-//       - ${includeEmoji ? "Include emojis" : "No emojis"}
-//       - ${includeHashtags ? "Include hashtags" : "No hashtags"}
-//       Only output the final text.
-//       `;
-//     }
-
-//     // --- Input parts (text + optional image) ---
-//     const inputParts: any[] = [{ text: prompt }];
-
-//     if (imageBase64) {
-//       inputParts.push({
-//         inlineData: {
-//           data: imageBase64.split(",")[1],
-//           mimeType: "image/jpeg",
-//         },
-//       });
-//     }
-
-//     const result = await model.generateContent({
-//       contents: [{ role: "user", parts: inputParts }],
-//     });
-//     const response = result.response.text().trim();
-//     return new Response(JSON.stringify({ content: response }), { status: 200 });
-//   } catch (error) {
-//     console.error("Error generating post:", error);
-//     return new Response(JSON.stringify({ error: "Failed to generate content" }), { status: 500 });
-//   }
-// }
-
-//----re
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+console.log("Gemini Key exists:", process.env.GEMINI_API_KEY ? "✅ Yes" : "❌ No");
 
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: '15mb', // allow image uploads
+      sizeLimit: "15mb",
     },
   },
 };
@@ -106,7 +14,7 @@ export const config = {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { 
+    let {
       platform,
       tone,
       wordLimit,
@@ -118,42 +26,62 @@ export async function POST(req: Request) {
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
+    // ✅ Guarantee that Gemini always has context to work with
+    if (!description || description.trim().length < 5) {
+      switch (platform) {
+        case "instagram":
+          description = "a recent trip with friends filled with fun and adventure";
+          break;
+        case "facebook":
+          description = "a joyful travel experience with great memories";
+          break;
+        case "linkedin":
+          description = "a professional achievement or skill I recently gained";
+          break;
+        case "twitter":
+          description = "a quick update about my latest experience";
+          break;
+        default:
+          description = "a general moment worth sharing online";
+      }
+    }
+
     let prompt = "";
 
     // --- Platform-Specific Prompts ---
     if (platform === "blog") {
       prompt = `
-      Write a detailed blog post on: "${description || 'a topic inferred from the image'}".
+      Write a detailed blog post on: "${description}".
       Requirements:
       - Tone: ${tone}
       - Word count: around ${wordLimit} words (between 1000–2500)
       - Include relevant headings and subheadings
       - Make it well-structured and SEO-friendly
-      - ${includeHashtags ? 'Add 3–5 relevant hashtags at the end (with #)' : 'No hashtags'}
-      - ${includeEmoji ? 'Use emojis sparingly where relevant' : 'Avoid emojis'}
+      - ${includeHashtags ? "Add 3–5 relevant hashtags at the end (with #)" : "No hashtags"}
+      - ${includeEmoji ? "Use emojis sparingly where relevant" : "Avoid emojis"}
       Only return the blog content.
       `;
     } else if (["instagram", "facebook", "linkedin", "twitter"].includes(platform)) {
       prompt = `
       You are an expert social media content creator.
-      Create a caption for ${platform}, analyzing the provided ${
-        imageBase64 ? "image" : "description"
-      }${imageBase64 && description ? " and description together" : ""}.
+      Create a ${platform} caption for this post.
+      Description: "${description}".
+      ${imageBase64 ? "An image is also provided for reference." : ""}
       Guidelines:
       - Tone: ${tone}
       - Word limit: ${wordLimit}
       - ${
         includeHashtags
-          ? "Include relevant hashtags at the end (each should begin with #)"
+          ? "Include relevant hashtags at the end (each starting with #)"
           : "Do not include hashtags"
       }
       - ${includeEmoji ? "Use emojis naturally" : "Avoid emojis"}
-      Focus on creating an engaging and context-aware caption.
-      Return only the caption text.
+      Focus on making it engaging and context-aware.
+      Return only the caption text — no explanations.
       `;
     } else {
       prompt = `
-      Write a ${platform} post about: ${description}.
+      Write a ${platform} post about: "${description}".
       - Tone: ${tone}
       - Word limit: ${wordLimit}
       - ${includeEmoji ? "Include emojis" : "No emojis"}
@@ -161,10 +89,9 @@ export async function POST(req: Request) {
       Only output the final text.
       `;
     }
-    // console.log(includeHashtags); 
+
     // --- Input parts (text + optional image) ---
     const inputParts: any[] = [{ text: prompt }];
-
     if (imageBase64) {
       inputParts.push({
         inlineData: {
@@ -174,43 +101,32 @@ export async function POST(req: Request) {
       });
     }
 
+    // --- Call Gemini ---
     const result = await model.generateContent({
       contents: [{ role: "user", parts: inputParts }],
     });
 
     let response = result.response.text().trim();
 
-    // ✅ Force hashtags to start with "#" if includeHashtags is true
-   if (includeHashtags) {
-  // Split lines and remove empty ones
-  const lines = response.split("\n").map(line => line.trim()).filter(Boolean);
-  let lastLine = lines[lines.length - 1];
+    // ✅ Fix hashtag formatting
+    if (includeHashtags) {
+      const lines = response.split("\n").map((line) => line.trim());
+      const lastLine = lines[lines.length - 1];
 
-  // Loosen the condition — allow emojis, punctuation, etc.
-  if (lastLine && lastLine.split(/\s+/).length <= 12) {
-    // Convert words that aren't already hashtags
-    console.log("lastline=",lastLine);
-    const hashtags = lastLine
-      .split(/\s+/)
-      .filter(Boolean)
-      .map(word => {
-        // Strip punctuation like commas or periods
-        const cleanWord = word.replace(/[^\w#]/g, "");
-        return cleanWord.startsWith("#") ? cleanWord : `#${cleanWord}`;
-      })
-      .join(" ");
-      // console.log("hashtags:",hashtags);
-    // Only replace if the line doesn't already contain multiple "#"
-    
-      lines[lines.length - 1] = hashtags;
-      // console.log(lines[lines.length-1]);
-      response = lines.join("\n");
-    // console.log(response);
-  }
-  // console.log(response)
-  // return new Response(JSON.stringify({ content: response }), { status: 200 });
-}
-
+      if (
+        lastLine &&
+        /^[A-Za-z\s#]+$/.test(lastLine) &&
+        lastLine.split(" ").length <= 15
+      ) {
+        const hashtags = lastLine
+          .split(/\s+/)
+          .filter(Boolean)
+          .map((word) => (word.startsWith("#") ? word : `#${word}`))
+          .join(" ");
+        lines[lines.length - 1] = hashtags;
+        response = lines.join("\n");
+      }
+    }
 
     return new Response(JSON.stringify({ content: response }), { status: 200 });
   } catch (error) {
